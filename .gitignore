@@ -1,3 +1,6 @@
+#VSC settings folder
+.vscode/
+
 # Prerequisites
 *.d
 
