@@ -27,6 +27,8 @@ public:
 
     rbt() : root(NULL) {}
 
+private:    
+
     void bstInsert(node *newNode)
     {
         if (root == NULL)
@@ -62,19 +64,14 @@ public:
         newNode->parent = prev;
     }
 
-    node *rotateRight(node *target)
-    {
-        if(target == root){
-            root = target->left;
+    node* minNode(node* target){
+        node *current = target;
+
+        while(current->left != nullptr){
+            current = current->left;
         }
-        node *left = target->left;
-        node *right = left->right;
-        left->right = target;
-        target->left = right;
-        target->parent = left;
-        if (right != nullptr)
-            right->parent = target;
-        return right;
+
+        return current;
     }
 
     node *rotateLeft(node *target)
@@ -91,89 +88,103 @@ public:
             left->parent = target;
         return right;
     }
+ 
+    node *rotateRight(node *target)
+    {
+        if(target == root){
+            root = target->left;
+        }
+        node *left = target->left;
+        node *right = left->right;
+        left->right = target;
+        target->left = right;
+        target->parent = left;
+        if (right != nullptr)
+            right->parent = target;
+        return right;
+    }
+
+    node* getUncle(node* target){
+        if(target->parent == target->parent->parent->left)
+            return target->parent->parent->right;
+
+        return target->parent->parent->left;
+    }
 
     void fixConflict(node *current)
     {
-        if (current->parent == current->parent->parent->left)
+        if(!(current->color == node::RED && current->parent->color == node::RED))
+            return;
+
+        
+        node *parent = current->parent;
+        node *grandfather = current->parent->parent;
+
+        if (parent == grandfather->left)
         {
-            if (current == current->parent->left)
+            if (current == parent->left)
             {
                 // LL
-                std::swap(current->parent->color, current->parent->parent->color);
-                current->parent->parent = rotateRight(current->parent->parent);
-            }
-            else
-            {
+                std::cout << "LL-\n";
+                std::swap(grandfather->color, parent->color);
+                grandfather = rotateRight(grandfather);
+            } else{
                 // LR
-                node *grandFather = current->parent->parent;
-                current->parent = rotateLeft(current->parent);
-                grandFather = rotateRight(grandFather);
-                std::swap(current, grandFather);
+                std::cout << "LR-\n";
+                parent = rotateLeft(parent);
+                fixConflict(parent);
             }
+       }
+       else{
+        if(current == parent->right){
+            // RR
+            std::cout << "RR-\n";
+            std::swap(grandfather->color, parent->color);
+            grandfather = rotateLeft(grandfather);
+            
+        } else{
+            // RL
+            std::cout << "RL-\n";
+            parent = rotateRight(parent);
+            fixConflict(parent);
         }
-        else if (current->parent == current->parent->parent->right)
-        {
-            if (current == current->parent->right)
-            {
-                // RR
-                std::swap(current->parent->color, current->parent->parent->color);
-                current->parent->parent = rotateLeft(current->parent->parent);
-            }
-            else
-            {
-                // RL
-                node *grandFather = current->parent->parent;
-                current->parent = rotateRight(current->parent);
-                std::swap(current, grandFather);
-                grandFather = rotateLeft(grandFather);
-            }
-        }
+       }
     }
 
     void insertHelper(node *&current)
     {
-        
-        if (root == current)
-        {
-            root->color = node::BLACK;
+        if(current == root){
+            current->color = node::BLACK;
             return;
         }
 
+        if(current->parent->color == node::RED && current != root){
+            
+            node *uncle = getUncle(current);
 
-        if (current->parent->color == node::RED && current != root)
-        {
-            node *uncle;
-            if (current->parent->parent->left == current->parent)
-            {
-                uncle = current->parent->parent->right;
-            }
-            else
-            {
-                uncle = current->parent->parent->left;
-            }
-
-
-            if (uncle == nullptr){ 
-                fixConflict(current);
-            }
-            else if(uncle->color == node::RED){
+            if(uncle != nullptr && uncle->color == node::RED){
+                
                 current->parent->color = node::BLACK;
                 uncle->color = node::BLACK;
                 current->parent->parent->color = node::RED;
+
                 insertHelper(current->parent->parent);
+                return;
             }
-            else if(uncle->color == node::BLACK){
+            else{
+                
                 fixConflict(current);
             }
-            
         }
     }
 
+public:
     void insert(int value)
     {
         node *newNode = new node(value);
 
         bstInsert(newNode);
+        
         insertHelper(newNode);
     }
 
